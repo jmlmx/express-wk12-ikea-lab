@@ -29,18 +29,19 @@ exports.createUser = async (req, res) => {
 };
 
 exports.loginUser = async (req, res) => {
-  try {
-    const user = await User.findOne({ email: req.body.email });
-    if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
-      res.status(400).send("Invalid login credentials");
-    } else {
-      const token = await user.generateAuthToken();
-      user.loggedIn = true;
-      res.json({ user, token });
+    try {
+      const user = await User.findOne({ email: req.body.email });
+      if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
+        res.status(400).send("You spelled your email wrong.");
+      } else {
+        user.loggedIn = true;
+        await user.save();
+        const token = await user.generateAuthToken();
+        res.json({ user, token });
+      }
+    } catch (error) {
+      res.status(400).json({ message: error.message });
     }
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
 };
 
 exports.logoutUser = async (req, res) => {
@@ -51,7 +52,8 @@ exports.logoutUser = async (req, res) => {
     } else {
       const token = await user.generateAuthToken();
       user.loggedIn = false;
-      res.json({ user, token });
+      await user.save();
+      res.json({ message: "Logged Out" });
     }
   } catch (error) {
     res.status(400).json({ message: error.message });
